@@ -3,7 +3,7 @@
             [status-im.protocol.web3.utils :as u]
             [status-im.protocol.web3.filtering :as f]
             [status-im.protocol.web3.delivery :as d]
-            [taoensso.timbre :refer-macros [debug]]
+            [taoensso.timbre :refer-macros [debug] :as log]
             [status-im.protocol.validation :refer-macros [valid?]]
             [status-im.protocol.web3.utils :as u]
             [status-im.protocol.web3.keys :as shh-keys]
@@ -13,6 +13,7 @@
             [status-im.protocol.encryption :as e]
             [status-im.protocol.discoveries :as discoveries]
             [cljs.spec.alpha :as s]
+            [status-im.utils.config :as config]
             [status-im.utils.random :as random]))
 
 ;; user
@@ -90,11 +91,20 @@
       (let [options (merge listener-options group)]
         (group/start-watching-group! options)))
     ;; start listening to user's inbox
-    (f/add-filter!
-      web3
-      {:key    identity
-       :topics [f/status-topic]}
-      (l/message-listener listener-options))
+    (if config/offline-inbox-enabled?
+      (do (log/info "offline-inbox-enabled, allowp2p")
+          (f/add-filter!
+            web3
+            {:key      identity
+             :allowP2P true
+             :topics   [f/status-topic]}
+            (l/message-listener listener-options)))
+      (f/add-filter!
+        web3
+        {:key    identity
+         :topics [f/status-topic]}
+        (l/message-listener listener-options)))
+
     ;; start listening to profiles
     (doseq [{:keys [identity keypair]} contacts]
       (watch-user! {:web3     web3
