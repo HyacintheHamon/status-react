@@ -3,6 +3,7 @@
             [status-im.protocol.web3.utils :as u]
             [status-im.protocol.web3.filtering :as f]
             [status-im.protocol.web3.delivery :as d]
+            [status-im.protocol.web3.inbox :as inbox]
             [taoensso.timbre :refer-macros [debug] :as log]
             [status-im.protocol.validation :refer-macros [valid?]]
             [status-im.protocol.web3.utils :as u]
@@ -98,7 +99,12 @@
             {:key      identity
              :allowP2P true
              :topics   [f/status-topic]}
-            (l/message-listener listener-options)))
+            (l/message-listener listener-options))
+          ;; TODO(oskarth): Clarify opts (status-go #470)
+          (inbox/request-messages!
+           web3
+           {}
+           #(log/info "offline-inbox request-messages response:" %)))
       (f/add-filter!
         web3
         {:key    identity
